@@ -1,0 +1,122 @@
+[
+  {
+    "path": ".DS_Store",
+    "reason": "系统文件或调试符号",
+    "bytes": 6148
+  },
+  {
+    "path": "a.out",
+    "reason": "已编译程序",
+    "bytes": 74536
+  },
+  {
+    "path": "main",
+    "reason": "已编译程序",
+    "bytes": 76488
+  },
+  {
+    "path": "main.dSYM/Contents/Info.plist",
+    "reason": "系统文件或调试符号",
+    "bytes": 653
+  },
+  {
+    "path": "main.dSYM/Contents/Resources/DWARF/main",
+    "reason": "系统文件或调试符号",
+    "bytes": 518124
+  },
+  {
+    "path": "main.dSYM/Contents/Resources/Relocations/aarch64/main.yml",
+    "reason": "系统文件或调试符号",
+    "bytes": 93
+  },
+  {
+    "path": "main2",
+    "reason": "已编译程序",
+    "bytes": 76888
+  },
+  {
+    "path": "main2.dSYM/Contents/Info.plist",
+    "reason": "系统文件或调试符号",
+    "bytes": 654
+  },
+  {
+    "path": "main2.dSYM/Contents/Resources/DWARF/main2",
+    "reason": "系统文件或调试符号",
+    "bytes": 584600
+  },
+  {
+    "path": "main2.dSYM/Contents/Resources/Relocations/aarch64/main2.yml",
+    "reason": "系统文件或调试符号",
+    "bytes": 94
+  },
+  {
+    "path": "main_async_ref",
+    "reason": "已编译程序",
+    "bytes": 74480
+  },
+  {
+    "path": "main_gkh12",
+    "reason": "已编译程序",
+    "bytes": 74536
+  },
+  {
+    "path": "main_gkh2_debug",
+    "reason": "已编译程序",
+    "bytes": 74192
+  },
+  {
+    "path": "main_probe3",
+    "reason": "已编译程序",
+    "bytes": 74312
+  },
+  {
+    "path": "main_probe3_nodebug",
+    "reason": "已编译程序",
+    "bytes": 74368
+  },
+  {
+    "path": "main_test",
+    "reason": "已编译程序",
+    "bytes": 74488
+  },
+  {
+    "path": "main_test2",
+    "reason": "已编译程序",
+    "bytes": 74328
+  },
+  {
+    "path": "qsub.sh",
+    "reason": "依赖原集群的提交脚本或自解压包装",
+    "bytes": 547
+  },
+  {
+    "path": "qsub_perf.sh",
+    "reason": "依赖原集群的提交脚本或自解压包装",
+    "bytes": 2474
+  },
+  {
+    "path": "submit_perf.sh",
+    "reason": "依赖原集群的提交脚本或自解压包装",
+    "bytes": 1816
+  },
+  {
+    "path": "svd_pthread_pool",
+    "reason": "已编译程序",
+    "bytes": 74144
+  },
+  {
+    "path": "test.e",
+    "reason": "原集群临时作业输出",
+    "bytes": 218
+  },
+  {
+    "path": "test.o",
+    "reason": "原集群临时作业输出",
+    "bytes": 2351
+  },
+  {
+    "path": "test.sh",
+    "reason": "依赖原集群的提交脚本或自解压包装",
+    "bytes": 2892
+  }
+]
