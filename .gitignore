@@ -1,0 +1,16 @@
+.DS_Store
+__MACOSX/
+*.dSYM/
+__pycache__/
+*.pyc
+/build/
+/results_*/
+/main
+/main_cpu
+/main_hipblas
+/main_hipkernel
+/svd/main
+/svd-raw/main
+perf.data*
+*.data
+*.data.old
