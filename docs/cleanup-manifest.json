@@ -1,0 +1,17 @@
+[
+  {
+    "path": "mpi-gpu-svd/qsub_mpi.sh",
+    "reason": "依赖原集群的提交脚本或自解压包装",
+    "bytes": 624
+  },
+  {
+    "path": "svd-raw/qsub.sh",
+    "reason": "依赖原集群的提交脚本或自解压包装",
+    "bytes": 547
+  },
+  {
+    "path": "svd-raw/test.sh",
+    "reason": "依赖原集群的提交脚本或自解压包装",
+    "bytes": 2892
+  }
+]

@@ -1,0 +1,749 @@
+#include "gkh.h"
+#include "givens.h"
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
+#elif defined(__AVX512F__) || defined(__AVX__)
+#include <immintrin.h>
+#endif
+#include <algorithm>
+#include <cmath>
+#include <deque>
+#include <limits>
+#include <omp.h>
+#include <stdexcept>
+#include <vector>
+
+namespace
+{
+
+    static Matrix transpose_copy(const Matrix &A)
+    {
+        Matrix T(A.cols(),A.rows(),0.0);
+        for (int i=0;i<A.rows();++i){
+            for (int j=0;j<A.cols();++j)
+            {
+                T.at(j,i)=A.at(i,j);
+            }
+        }
+        return T;
+    }
+
+    // 活动块 [l, r]（闭区间）表示一个尚未完全收敛的上二对角子问题。
+    // 在该区间内，超对角线元素非零，你可以认为通过这个抽象结构给矩阵“分块”。
+    struct Block
+    {
+        int l;
+        int r;
+    };
+
+    struct RowRotation
+    {
+        int r0;
+        int r1;
+        double c;
+        double s;
+    };
+
+    static void apply_row_rotations_serial(Matrix &M,const std::vector<RowRotation> &ops,int begin,int end);
+
+    static int simd_lane_width()
+    {
+#if defined(__AVX512F__)
+        return 8;
+#elif defined(__AVX__) || defined(__ARM_NEON) || defined(__ARM_NEON__)
+        return 4;
+#else
+        return 1;
+#endif
+    }
+
+    static int choose_rotation_block_cols(int cols,int requested_threads)
+    {
+        const int threads=std::max(1,requested_threads);
+        const int target_blocks=std::max(threads*2,1);
+        const int lane=simd_lane_width();
+        const int raw=(cols+target_blocks-1)/target_blocks;
+        const int min_block=std::max(32,lane);
+        const int aligned=((std::max(raw,min_block)+lane-1)/lane)*lane;
+        return std::min(cols,std::max(aligned,lane));
+    }
+
+    static bool rotation_parallel_worthwhile(int cols,size_t op_count,int requested_threads)
+    {
+        if (requested_threads<=1||cols<128||op_count<=1)
+        {
+            return false;
+        }
+        return static_cast<long long>(cols)*static_cast<long long>(op_count)>=32768LL;
+    }
+
+    static void apply_left_rows_range(Matrix &M, int r0, int r1, double c, double s, int begin, int end)
+    {
+        if (begin>=end)
+        {
+            return;
+        }
+        int j=begin;
+        double *row0=&M.at(r0,0);
+        double *row1=&M.at(r1,0);
+#if defined(__AVX512F__)
+        const __m512d vc = _mm512_set1_pd(c);
+        const __m512d vs = _mm512_set1_pd(s);
+        for (; j + 7 < end; j += 8)
+        {
+            const __m512d a = _mm512_loadu_pd(row0 + j);
+            const __m512d b = _mm512_loadu_pd(row1 + j);
+            const __m512d new0 = _mm512_add_pd(_mm512_mul_pd(vc, a), _mm512_mul_pd(vs, b));
+            const __m512d new1 = _mm512_sub_pd(_mm512_mul_pd(vc, b), _mm512_mul_pd(vs, a));
+            _mm512_storeu_pd(row0 + j, new0);
+            _mm512_storeu_pd(row1 + j, new1);
+        }
+#elif defined(__AVX__)
+        const __m256d vc = _mm256_set1_pd(c);
+        const __m256d vs = _mm256_set1_pd(s);
+        for (; j + 3 < end; j += 4)
+        {
+            const __m256d a = _mm256_loadu_pd(row0 + j);
+            const __m256d b = _mm256_loadu_pd(row1 + j);
+            const __m256d new0 = _mm256_add_pd(_mm256_mul_pd(vc, a), _mm256_mul_pd(vs, b));
+            const __m256d new1 = _mm256_sub_pd(_mm256_mul_pd(vc, b), _mm256_mul_pd(vs, a));
+            _mm256_storeu_pd(row0 + j, new0);
+            _mm256_storeu_pd(row1 + j, new1);
+        }
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+        float64x2_t vc=vdupq_n_f64(c);
+        float64x2_t vs=vdupq_n_f64(s);
+        float64x2_t vns=vdupq_n_f64(-s);
+        for (; j+7<end;j+=8)
+        {
+            float64x2_t a0=vld1q_f64(row0+j);
+            float64x2_t a1=vld1q_f64(row0+j+2);
+            float64x2_t a2=vld1q_f64(row0+j+4);
+            float64x2_t a3=vld1q_f64(row0+j+6);
+            float64x2_t b0=vld1q_f64(row1+j);
+            float64x2_t b1=vld1q_f64(row1+j+2);
+            float64x2_t b2=vld1q_f64(row1+j+4);
+            float64x2_t b3=vld1q_f64(row1+j+6);
+            float64x2_t new00=vaddq_f64(vmulq_f64(vc,a0),vmulq_f64(vs,b0));
+            float64x2_t new01=vaddq_f64(vmulq_f64(vns,a0),vmulq_f64(vc,b0));
+            float64x2_t new10=vaddq_f64(vmulq_f64(vc,a1),vmulq_f64(vs,b1));
+            float64x2_t new11=vaddq_f64(vmulq_f64(vns,a1),vmulq_f64(vc,b1));
+            float64x2_t new20=vaddq_f64(vmulq_f64(vc,a2),vmulq_f64(vs,b2));
+            float64x2_t new21=vaddq_f64(vmulq_f64(vns,a2),vmulq_f64(vc,b2));
+            float64x2_t new30=vaddq_f64(vmulq_f64(vc,a3),vmulq_f64(vs,b3));
+            float64x2_t new31=vaddq_f64(vmulq_f64(vns,a3),vmulq_f64(vc,b3));
+            vst1q_f64(row0+j,new00);
+            vst1q_f64(row1+j,new01);
+            vst1q_f64(row0+j+2,new10);
+            vst1q_f64(row1+j+2,new11);
+            vst1q_f64(row0+j+4,new20);
+            vst1q_f64(row1+j+4,new21);
+            vst1q_f64(row0+j+6,new30);
+            vst1q_f64(row1+j+6,new31);
+        }
+        for (; j+3<end;j+=4)
+        {
+            float64x2_t a0=vld1q_f64(row0+j);
+            float64x2_t a1=vld1q_f64(row0+j+2);
+            float64x2_t b0=vld1q_f64(row1+j);
+            float64x2_t b1=vld1q_f64(row1+j+2);
+            float64x2_t new00=vaddq_f64(vmulq_f64(vc,a0),vmulq_f64(vs,b0));
+            float64x2_t new01=vaddq_f64(vmulq_f64(vns,a0),vmulq_f64(vc,b0));
+            float64x2_t new10=vaddq_f64(vmulq_f64(vc,a1),vmulq_f64(vs,b1));
+            float64x2_t new11=vaddq_f64(vmulq_f64(vns,a1),vmulq_f64(vc,b1));
+            vst1q_f64(row0+j,new00);
+            vst1q_f64(row1+j,new01);
+            vst1q_f64(row0+j+2,new10);
+            vst1q_f64(row1+j+2,new11);
+        }
+        for(;j+1<end;j+=2)
+        {
+            float64x2_t a=vld1q_f64(row0+j);
+            float64x2_t b=vld1q_f64(row1+j);
+            float64x2_t new0=vaddq_f64(vmulq_f64(vc,a),vmulq_f64(vs,b));
+            float64x2_t new1=vaddq_f64(vmulq_f64(vns,a),vmulq_f64(vc,b));
+            vst1q_f64(row0+j,new0);
+            vst1q_f64(row1+j,new1);
+        }
+#endif
+        for(;j<end;j++)
+        {
+            double a = row0[j];
+            double b = row1[j];
+            row0[j] = c * a + s * b;
+            row1[j] = -s * a + c * b;
+        }
+    }
+
+    static void apply_row_rotations_serial(Matrix &M,const std::vector<RowRotation> &ops,int begin,int end)
+    {
+        for (const auto &op:ops)
+        {
+            apply_left_rows_range(M,op.r0,op.r1,op.c,op.s,begin,end);
+        }
+    }
+
+    static void apply_row_rotations_openmp(Matrix &M,const std::vector<RowRotation> &ops,int requested_threads)
+    {
+        if (ops.empty())
+        {
+            return;
+        }
+        const int cols=M.cols();
+        if (!rotation_parallel_worthwhile(cols,ops.size(),requested_threads))
+        {
+            apply_row_rotations_serial(M,ops,0,cols);
+            return;
+        }
+        if (omp_in_parallel()!=0)
+        {
+            // 若意外处于并行域内，避免嵌套并行导致调度卡顿，直接串行执行本批次。
+            apply_row_rotations_serial(M,ops,0,cols);
+            return;
+        }
+
+        const int block_cols=choose_rotation_block_cols(cols,requested_threads);
+        const int blocks=(cols+block_cols-1)/block_cols;
+        const int threads=std::min(requested_threads,blocks);
+        #pragma omp parallel for schedule(static) num_threads(threads)
+        for (int blk=0;blk<blocks;++blk)
+        {
+            const int begin=blk*block_cols;
+            const int end=std::min(cols,begin+block_cols);
+            apply_row_rotations_serial(M,ops,begin,end);
+        }
+    }
+
+    static void apply_two_row_rotation_batches_openmp(Matrix &A,const std::vector<RowRotation> &a_ops,
+                                                      Matrix &B,const std::vector<RowRotation> &b_ops,
+                                                      int requested_threads)
+    {
+        const int a_cols=A.cols();
+        const int b_cols=B.cols();
+        const bool a_parallel=rotation_parallel_worthwhile(a_cols,a_ops.size(),requested_threads);
+        const bool b_parallel=rotation_parallel_worthwhile(b_cols,b_ops.size(),requested_threads);
+        if ((!a_parallel&&!b_parallel)||omp_in_parallel()!=0)
+        {
+            apply_row_rotations_serial(A,a_ops,0,a_cols);
+            apply_row_rotations_serial(B,b_ops,0,b_cols);
+            return;
+        }
+
+        const int a_block_cols=a_parallel?choose_rotation_block_cols(a_cols,requested_threads):a_cols;
+        const int b_block_cols=b_parallel?choose_rotation_block_cols(b_cols,requested_threads):b_cols;
+        const int a_blocks=a_parallel?(a_cols+a_block_cols-1)/a_block_cols:1;
+        const int b_blocks=b_parallel?(b_cols+b_block_cols-1)/b_block_cols:1;
+        const int total_blocks=a_blocks+b_blocks;
+        const int threads=std::min(requested_threads,total_blocks);
+
+        #pragma omp parallel for schedule(static) num_threads(threads)
+        for (int blk=0;blk<total_blocks;++blk)
+        {
+            if (blk<a_blocks)
+            {
+                const int begin=a_parallel?blk*a_block_cols:0;
+                const int end=a_parallel?std::min(a_cols,begin+a_block_cols):a_cols;
+                apply_row_rotations_serial(A,a_ops,begin,end);
+            }
+            else
+            {
+                const int local_blk=blk-a_blocks;
+                const int begin=b_parallel?local_blk*b_block_cols:0;
+                const int end=b_parallel?std::min(b_cols,begin+b_block_cols):b_cols;
+                apply_row_rotations_serial(B,b_ops,begin,end);
+            }
+        }
+    }
+
+    // 对矩阵 M 的两行 r0, r1 左乘 Givens 旋转 [c s; -s c]。
+    // 即 M <- L * M，其中 L 只作用在第 r0/r1 两行上。
+    // 这类逐元素线性组合很适合向量化，SIMD/多线程中你也可以顺手的事把他们做了。
+    static void apply_left_rows(Matrix &M, int r0, int r1, double c, double s)
+    {
+        apply_left_rows_range(M,r0,r1,c,s,0,M.cols());
+    }
+
+    // 对矩阵 M 的两列 c0, c1 右乘 Givens 旋转 [c s; -s c]。
+    // 即 M <- M * R，其中 R 只作用在第 c0/c1 两列上。
+    static void apply_right_cols_scalar(Matrix &M, int c0, int c1, double c, double s)
+    {
+        for (int i=0;i<M.rows();++i)
+        {
+            double a=M.at(i,c0);
+            double b=M.at(i,c1);
+            M.at(i,c0)=a*c-b*s;
+            M.at(i,c1)=a*s+b*c;
+        }
+    }
+
+    //对转置矩阵M^T的两行执行左乘，等价于原矩阵M的右乘两列。
+    static void apply_right_cols(Matrix &Mt, int c0, int c1, double c, double s)
+    {
+        apply_left_rows(Mt,c0,c1,c,-s);
+    }
+
+    static void accumulate_left_into_U(Matrix &Ut, int r0, int r1, double c, double s)
+    {
+        // 我们该怎样积累 U 和 V 的更新呢？
+        // 以此处 U 的积累为例，让我们B <- L * B 时，我们必须维护的等式是 A = U * B * V^T
+        // 如果 A = U * B * V^T 不成立，那么我们最终的SVD结果显然不是 A 的正确分解。
+        // 由于正交矩阵和其转置的乘积是I，一个自然的想法是让 U <- U * L^T。
+        // 这样就变成 A = (U * L^T) * (L * B) * V^T = U * B * V^T，等式得以保持。
+
+        // U <- U * L^T  <=>  U^T <- L * U^T，直接复用行连续访问的 SIMD 路径。
+        apply_left_rows(Ut,r0,r1,c,s);
+    }
+
+    // 计算活动块 [l, r] 对应 B^T B 右下 2x2 主子块的 Wilkinson 偏移。
+    // 偏移用于加速 QR 迭代收敛，并让 bulge chasing 过程更稳定。
+    static double block_wilkinson_shift(const Matrix &B, int l, int r)
+    {
+        if (r == l)
+        {
+            return B.at(l, l) * B.at(l, l);
+        }
+
+        const double d1 = B.at(r - 1, r - 1);
+        const double e1 = B.at(r - 1, r);
+        const double d2 = B.at(r, r);
+        const double e0 = (r - 1 > l) ? B.at(r - 2, r - 1) : 0.0;
+
+        const double a = d1 * d1 + e0 * e0;
+        const double b = d1 * e1;
+        const double d = d2 * d2 + e1 * e1;
+
+        const double tr = a + d;
+        const double det = a * d - b * b;
+        double disc = 0.25 * tr * tr - det;
+        if (disc < 0.0)
+        {
+            disc = 0.0;
+        }
+
+        const double root = std::sqrt(disc);
+        const double lam1 = 0.5 * tr + root;
+        const double lam2 = 0.5 * tr - root;
+        return (std::fabs(lam1 - d) <= std::fabs(lam2 - d)) ? lam1 : lam2;
+    }
+
+    // 将上二对角结构以外、且绝对值很小的元素强制置零。
+    static void cleanup_bidiagonal(Matrix &B, double tol)
+    {
+        for (int i = 0; i < B.rows(); ++i)
+        {
+            for (int j = 0; j < B.cols(); ++j)
+            {
+                if (j != i && j != i + 1 && std::fabs(B.at(i, j)) <= tol)
+                {
+                    B.at(i, j) = 0.0;
+                }
+            }
+        }
+    }
+
+    // 对活动块 [l, r] 执行一次“单块 GKH bulge chasing”迭代。
+    // 流程：首次右乘引入 bulge -> 首次左乘消 bulge -> 交替右乘/左乘将 bulge 追赶到块末端。
+    static void one_block_step(Matrix &Ut, Matrix &B, Matrix &Vt, int l, int r, int uv_threads)
+    {
+        if (r <= l)
+        {
+            return;
+        }
+
+        const double mu=block_wilkinson_shift(B,l,r);
+
+        double c = 1.0;
+        double s = 0.0;
+        double rr = 0.0;
+        std::vector<RowRotation>v_ops;
+        std::vector<RowRotation>u_ops;
+        v_ops.reserve(static_cast<size_t>(2*(r-l)+1));
+        u_ops.reserve(static_cast<size_t>(2*(r-l)+1));
+
+        // 首次右乘：由 (d_l^2-mu, d_l*e_l) 构造。
+        const double x = B.at(l, l) * B.at(l, l) - mu;
+        const double z = B.at(l, l) * B.at(l, l + 1);
+        givens_rotation(x,z,c,s,rr,false);
+        apply_right_cols_scalar(B,l,l+1,c,s);
+        v_ops.push_back({l,l+1,c,-s});
+
+        // 首次左乘：消去 (l+1, l)。
+        givens_rotation(B.at(l,l),B.at(l+1,l),c,s,rr,true);
+        apply_left_rows(B,l,l+1,c,s);
+        u_ops.push_back({l,l+1,c,s});
+
+        for (int k = l + 1; k <= r - 1; ++k)
+        {
+            // 右乘：消去 (k-1, k+1)
+            givens_rotation(B.at(k-1,k),B.at(k-1,k+1),c,s,rr,false);
+            apply_right_cols_scalar(B,k,k+1,c,s);
+            v_ops.push_back({k,k+1,c,-s});
+
+            // 左乘：消去 (k+1, k)
+            givens_rotation(B.at(k,k),B.at(k+1,k),c,s,rr,true);
+            apply_left_rows(B,k,k+1,c,s);
+            u_ops.push_back({k,k+1,c,s});
+        }
+
+        apply_two_row_rotation_batches_openmp(Vt,v_ops,Ut,u_ops,uv_threads);
+    }
+
+    // 处理“对角元 d_k 近零但超对角 e_k 未近零”的情况。
+    // 思路与单块追赶类似：先右乘把 e_i 消掉，再左乘清理新引入的次对角 bulge，
+    // 把这个问题逐步向右传递，直到块末端。
+    static bool chase_zero_diagonal(Matrix &Ut, Matrix &B, Matrix &Vt, int k, double tol)
+    {
+        const int m = B.rows();
+        const int n = B.cols();
+        if (k < 0 || k >= n - 1)
+        {
+            return false;
+        }
+
+        // d_k ~ 0 且 e_k 还未收敛时，按 lim_1 思路进行压缩追赶：
+        // 1) 右乘消去第 k 行的 e_k；2) 左乘消去引入的次对角 bulge；
+        // 然后把问题传递到下一行，直到末端。
+        if (std::fabs(B.at(k, k + 1)) <= tol)
+        {
+            return false;
+        }
+
+        bool changed = false;
+        for (int i = k; i <= n - 2; ++i)
+        {
+            double c = 1.0;
+            double s = 0.0;
+            double rr = 0.0;
+
+            // 右乘：使第 i 行满足 [d_i, e_i] * G = [r, 0]。
+            givens_rotation(B.at(i,i),B.at(i,i+1),c,s,rr,false);
+            apply_right_cols_scalar(B,i,i+1,c,s);
+            apply_right_cols(Vt,i,i+1,c,s);
+
+            // 左乘：消去 (i+1, i) 处由右乘引入的 bulge。
+            if (i + 1 < m)
+            {
+                givens_rotation(B.at(i,i),B.at(i+1,i),c,s,rr,true);
+                apply_left_rows(B,i,i+1,c,s);
+                accumulate_left_into_U(Ut,i,i+1,c,s);
+            }
+
+            changed = true;
+        }
+
+        cleanup_bidiagonal(B, tol);
+        return changed;
+    }
+
+    // 扫描所有 d_k≈0 的位置：若对应 e_k 仍显著非零，则调用追赶过程压缩该异常结构。
+    // 返回值表示本轮是否对 B/U/V 做了实际更新。
+    static bool handle_diagonal_zeros(Matrix &Ut, Matrix &B, Matrix &Vt, double tol)
+    {
+        const int n = B.cols();
+        bool changed = false;
+
+        const double eps = std::numeric_limits<double>::epsilon();
+        const double diag_tol = tol;
+        const double super_tol = tol * (1.0 + 10.0 * eps);
+
+        for (int k = 0; k < n - 1; ++k)
+        {
+            if (std::fabs(B.at(k, k)) <= diag_tol && std::fabs(B.at(k, k + 1)) > super_tol)
+            {
+                if (chase_zero_diagonal(Ut,B,Vt,k,tol))
+                {
+                    changed = true;
+                }
+            }
+        }
+
+        return changed;
+    }
+
+    // 根据超对角线是否“足够小”对问题进行分块。
+    // 若 |e_k| <= tol*(|d_k|+|d_{k+1}|+1)，认为该位置可解耦并直接置零。
+    // 最终会得到一系列小矩阵。
+    static std::vector<Block> split_active_blocks(Matrix &B, int n, double tol)
+    {
+        for (int k = 0; k < n - 1; ++k)
+        {
+            const double a = std::fabs(B.at(k, k));
+            const double d = std::fabs(B.at(k + 1, k + 1));
+            const double crit = tol * (a + d + 1.0);
+            if (std::fabs(B.at(k, k + 1)) <= crit)
+            {
+                B.at(k, k + 1) = 0.0;
+            }
+        }
+
+        std::vector<Block> blocks;
+        int l = 0;
+        while (l < n)
+        {
+            int r = l;
+            while (r < n - 1 && std::fabs(B.at(r, r + 1)) > 0.0)
+            {
+                ++r;
+            }
+            blocks.push_back({l, r});
+            l = r + 1;
+        }
+        return blocks;
+    }
+
+    // 收尾步骤：
+    // 1) 把奇异值（对角元）统一调整为非负；
+    // 2) 按降序重排奇异值，同时同步重排 U、V 对应列。
+    // 最终得到常见的 SVD 规范形式：sigma_1 >= sigma_2 >= ... >= 0。
+    // 这个函数你不用太在意，后续任务也不会明确涉及它。
+    static void make_nonnegative_and_sort(Matrix &U, Matrix &B, Matrix &V)
+    {
+        const int m = B.rows();
+        const int n = B.cols();
+
+        for (int i = 0; i < n; ++i)
+        {
+            if (B.at(i, i) < 0.0)
+            {
+                B.at(i, i) = -B.at(i, i);
+                for (int r = 0; r < m; ++r)
+                {
+                    U.at(r, i) = -U.at(r, i);
+                }
+            }
+        }
+
+        std::vector<int> idx(n);
+        for (int i = 0; i < n; ++i)
+        {
+            idx[i] = i;
+        }
+        std::sort(idx.begin(), idx.end(), [&](int a, int b)
+                  { return B.at(a, a) > B.at(b, b); });
+
+        Matrix U2 = U;
+        Matrix V2 = V;
+        Matrix D(B.rows(), B.cols(), 0.0);
+
+        for (int new_i = 0; new_i < n; ++new_i)
+        {
+            const int old_i = idx[new_i];
+            D.at(new_i, new_i) = B.at(old_i, old_i);
+
+            for (int r = 0; r < U.rows(); ++r)
+            {
+                U2.at(r, new_i) = U.at(r, old_i);
+            }
+            for (int r = 0; r < V.rows(); ++r)
+            {
+                V2.at(r, new_i) = V.at(r, old_i);
+            }
+        }
+
+        U = U2;
+        V = V2;
+        B = D;
+    }
+
+    // 在子区间[l,r]内继续切块。
+    static std::vector<Block> split_subblocks_in_range(Matrix &B,int l,int r,double tol)
+    {
+        if (r<=l)
+        {
+            return {};
+        }
+        for (int k=l;k<r;++k)
+        {
+            const double a=std::fabs(B.at(k,k));
+            const double d=std::fabs(B.at(k+1,k+1));
+            const double crit=tol*(a+d+1.0);
+            if (std::fabs(B.at(k,k+1))<=crit)
+            {
+                B.at(k,k+1)=0.0;
+            }
+        }
+        std::vector<Block>out;
+        int cur=l;
+        while (cur<=r)
+        {
+            int rr=cur;
+            while (rr<r&&std::fabs(B.at(rr,rr+1))>0.0)
+            {
+                ++rr;
+            }
+            if (rr>cur)
+            {
+                out.push_back({cur,rr});
+            }
+            cur=rr+1;
+        }
+        return out;
+    }
+
+    static void process_block_task(Matrix &Ut,Matrix &B,Matrix &Vt,Block start_blk,double tol,long long &total_steps,const long long max_global_steps,int &limit_hit,int inner_uv_threads)
+    {
+        Block cur=start_blk;
+        while (cur.r>cur.l)
+        {
+            int stop_now=0;
+            #pragma omp atomic read
+            stop_now=limit_hit;
+            if (stop_now!=0)
+            {
+                return;
+            }
+
+            long long step_after=0;
+            #pragma omp atomic capture
+            step_after=++total_steps;
+            if (step_after>max_global_steps)
+            {
+                #pragma omp atomic write
+                limit_hit=1;
+                return;
+            }
+
+            one_block_step(Ut,B,Vt,cur.l,cur.r,inner_uv_threads);
+            std::vector<Block>parts=split_subblocks_in_range(B,cur.l,cur.r,tol);
+            Block keep={-1,-1};
+            int keep_len=-1;
+            for (const auto &blk:parts)
+            {
+                if (blk.r>blk.l)
+                {
+                    const int len=blk.r-blk.l+1;
+                    if (len>keep_len)
+                    {
+                        keep_len=len;
+                        keep=blk;
+                    }
+                }
+            }
+
+            for (const auto &blk:parts)
+            {
+                if (blk.r<=blk.l)
+                {
+                    continue;
+                }
+                if (blk.l==keep.l&&blk.r==keep.r)
+                {
+                    continue;
+                }
+                if (blk.r-blk.l>=16)
+                {
+                    #pragma omp task firstprivate(blk) shared(Ut,B,Vt,total_steps,limit_hit)
+                    process_block_task(Ut,B,Vt,blk,tol,total_steps,max_global_steps,limit_hit,inner_uv_threads);
+                }
+                else
+                {
+                    process_block_task(Ut,B,Vt,blk,tol,total_steps,max_global_steps,limit_hit,inner_uv_threads);
+                }
+            }
+
+            if (keep.r<=keep.l)
+            {
+                return;
+            }
+            cur=keep;
+        }
+    }
+
+} // namespace
+
+// 从“上二对角矩阵 B”出发执行 Golub-Kahan SVD 迭代（改进版）：
+// - 输入输出满足 A = U * B * V^T 不变；
+// - 迭代中自动分块、处理对角近零、并在每个活动块上做 bulge chasing；
+// - 成功收敛后，B 被整理为非负且降序的对角矩阵（其对角元即奇异值）。
+bool gkh_svd_from_bidiagonal(Matrix &U, Matrix &B, Matrix &V, int max_iter, double tol)
+{
+    const int m = B.rows();
+    const int n = B.cols();
+
+    if (m < n)
+    {
+        throw std::invalid_argument("gkh_svd_from_bidiagonal_v2: requires m >= n");
+    }
+    if (U.rows() != m || U.cols() != m)
+    {
+        throw std::invalid_argument("gkh_svd_from_bidiagonal_v2: U must be m x m");
+    }
+    if (V.rows() != n || V.cols() != n)
+    {
+        throw std::invalid_argument("gkh_svd_from_bidiagonal_v2: V must be n x n");
+    }
+
+    bool converged=false;
+    Matrix Ut=transpose_copy(U);
+    Matrix Vt=transpose_copy(V);
+    const int max_threads=std::max(1,omp_get_max_threads());
+    const int req_threads=(n>=512)?max_threads:((n>=128)?std::min(max_threads,4):1);
+    omp_set_dynamic(0);
+    omp_set_nested(0);
+    omp_set_num_threads(req_threads);
+
+    // 清理数值噪声，并优先处理 d_k≈0 的特殊情形。
+    cleanup_bidiagonal(B,tol);
+    handle_diagonal_zeros(Ut,B,Vt,tol);
+
+    // 根据超对角线断点拆分活动块
+    // 这里子矩阵间是相互独立的，所以此处具有很大的并行潜力：你可以尝试多线程/多进程进行处理
+    // 但根据算法，收集 Givens 旋转并更新 U/V 需要在每个块内顺序执行，所以这可能给并行带来麻烦。
+    std::vector<Block> blocks=split_active_blocks(B,n,tol);
+    std::vector<Block> jobs;
+    jobs.reserve(blocks.size());
+    for (const auto &blk:blocks)
+    {
+        if (blk.r>blk.l)
+        {
+            jobs.push_back(blk);
+        }
+    }
+
+    // 若全部是 1x1 块，说明所有超对角都已收敛为 0。
+    if (jobs.empty())
+    {
+        converged=true;
+    }
+    else
+    {
+        long long total_steps=0;
+        const long long max_global_steps=std::max(1,max_iter);
+        int limit_hit=0;
+        if (jobs.size()==1)
+        {
+            // 单大块：外层不启 task 并行，内层 one_block_step 才能安全利用 OpenMP for。
+            process_block_task(Ut,B,Vt,jobs[0],tol,total_steps,max_global_steps,limit_hit,req_threads);
+        }
+        else
+        {
+            const int inner_uv_threads=1;
+            #pragma omp parallel num_threads(req_threads) shared(Ut,B,Vt,jobs,total_steps,limit_hit)
+            {
+                #pragma omp single
+                {
+                    #pragma omp taskgroup
+                    for (const auto &blk:jobs)
+                    {
+                        #pragma omp task firstprivate(blk) shared(Ut,B,Vt,total_steps,limit_hit)
+                        process_block_task(Ut,B,Vt,blk,tol,total_steps,max_global_steps,limit_hit,inner_uv_threads);
+                    }
+                }
+            }
+        }
+        converged=(limit_hit==0);
+    }
+
+    U=transpose_copy(Ut);
+    V=transpose_copy(Vt);
+
+    // 迭代结束后统一结构清理与标准化输出。
+    cleanup_bidiagonal(B, tol);
+    for (int i = 0; i < n - 1; ++i)
+    {
+        B.at(i, i + 1) = 0.0;
+    }
+    make_nonnegative_and_sort(U, B, V);
+
+    return converged;
+}
