@@ -1,0 +1,17 @@
+[
+  {
+    "path": "main_cpu",
+    "reason": "已编译程序",
+    "bytes": 45912
+  },
+  {
+    "path": "main_hipblas",
+    "reason": "已编译程序",
+    "bytes": 79088
+  },
+  {
+    "path": "main_hipkernel",
+    "reason": "已编译程序",
+    "bytes": 80464
+  }
+]
