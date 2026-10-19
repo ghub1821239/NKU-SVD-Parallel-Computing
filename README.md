@@ -39,3 +39,5 @@ g++ -O3 -std=c++17 -fopenmp main.cpp bidiagonalization.cpp   '【6】gkh_openmp_
 
 源仓库、快照提交及清理范围见 [PROVENANCE.md](PROVENANCE.md)。这里重新组织展示快照，原提交历史仍在原仓库；已有许可证随对应作业保留，不将整仓库统一重新许可。
 
+
+本次整理的实际检查与未验证范围见 [VALIDATION.md](VALIDATION.md)。
