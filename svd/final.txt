@@ -1,0 +1,21 @@
+第一次的 perf 是 perf1_raw.data
+可以使用 perf report -i perf_raw.data查看
+
+查看 l1 bound
+perf stat -M l1_bound ./test1
+
+编译
+g++ -O2 -g main.cpp gkh.cpp bidiagonalization.cpp -o raw
+g++ -O2 -g -march=native main.cpp gkh.cpp bidiagonalization.cpp -o SIMD—no-fmaq
+
+perf事件
+perf stat -r 5 -M memory_bound,core_bound,l1_bound,l2_bound,mem_bound ./SIMD—no-fmaq
+perf record -e instructions,cpu-cycles,cache-misses,stalled-cycles-backend,stalled-cycles-frontend -g ./SIMD—no-fmaq
+
+查看进程
+qstat [-n]
+终止进程
+qdel 2413633.master_ubss1
+
+python3 summary.py
+python3 parse_perf_stat.py

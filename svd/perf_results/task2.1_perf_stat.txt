@@ -1,0 +1,19 @@
+
+ Performance counter stats for './simd/task2.1' (5 runs):
+
+    68,005,534,150      cpu_cycles:u                                                  ( +-  3.00% )
+       664,874,872      armv8_pmuv3_0/event=0x7005/u                                     ( +- 11.71% )
+    19,448,040,445      mem_stall_anyload:u                                           ( +-  5.01% )
+    68,005,534,150      cpu_cycles:u                                                  ( +-  3.00% )
+       664,874,872      armv8_pmuv3_0/event=0x7005/u                                     ( +- 11.71% )
+    58,537,009,526      exe_stall_cycle:u                                             ( +-  3.50% )
+    19,448,040,445      mem_stall_anyload:u                                           ( +-  5.01% )
+    68,005,534,150      cpu_cycles:u                                                  ( +-  3.00% )
+    17,210,487,833      mem_stall_l1miss:u                                            ( +-  5.96% )
+    19,448,040,445      mem_stall_anyload:u                                           ( +-  5.01% )
+    68,005,534,150      cpu_cycles:u                                                                                     ( +-  3.00% )
+    17,210,487,833      mem_stall_l1miss:u                                            ( +-  5.96% )
+    12,212,388,305      mem_stall_l2miss:u                                            ( +-  8.59% )
+
+            26.834 +- 0.833 seconds time elapsed  ( +-  3.11% )
+

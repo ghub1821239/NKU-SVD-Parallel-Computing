@@ -1,0 +1,19 @@
+
+ Performance counter stats for './previous-run-data-of-simd/SIMD—no-fmaq' (5 runs):
+
+    54,920,825,458      cpu_cycles:u                                                  ( +-  4.28% )
+       133,725,604      armv8_pmuv3_0/event=0x7005/u                                     ( +- 27.34% )
+    15,051,543,148      mem_stall_anyload:u                                           ( +-  3.75% )
+    54,920,825,458      cpu_cycles:u                                                  ( +-  4.28% )
+       133,725,604      armv8_pmuv3_0/event=0x7005/u                                     ( +- 27.34% )
+    46,008,660,122      exe_stall_cycle:u                                             ( +-  5.18% )
+    15,051,543,148      mem_stall_anyload:u                                           ( +-  3.75% )
+    54,920,825,458      cpu_cycles:u                                                  ( +-  4.28% )
+    13,568,551,154      mem_stall_l1miss:u                                            ( +-  3.64% )
+    15,051,543,148      mem_stall_anyload:u                                           ( +-  3.75% )
+    54,920,825,458      cpu_cycles:u                                                                                     ( +-  4.28% )
+    13,568,551,154      mem_stall_l1miss:u                                            ( +-  3.64% )
+     8,467,407,003      mem_stall_l2miss:u                                            ( +-  5.35% )
+
+            21.743 +- 0.952 seconds time elapsed  ( +-  4.38% )
+

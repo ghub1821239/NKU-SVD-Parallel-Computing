@@ -1,0 +1,19 @@
+
+ Performance counter stats for './previous-run-data-of-simd/raw' (5 runs):
+
+   317,579,466,468      cpu_cycles:u                                                  ( +-  5.24% )
+        41,789,213      armv8_pmuv3_0/event=0x7005/u                                     ( +- 16.60% )
+    98,586,351,006      mem_stall_anyload:u                                           ( +-  6.77% )
+   317,579,466,468      cpu_cycles:u                                                  ( +-  5.24% )
+        41,789,213      armv8_pmuv3_0/event=0x7005/u                                     ( +- 16.60% )
+   305,979,894,246      exe_stall_cycle:u                                             ( +-  5.44% )
+    98,586,351,006      mem_stall_anyload:u                                           ( +-  6.77% )
+   317,579,466,468      cpu_cycles:u                                                  ( +-  5.24% )
+    91,182,970,491      mem_stall_l1miss:u                                            ( +-  6.91% )
+    98,586,351,006      mem_stall_anyload:u                                           ( +-  6.77% )
+   317,579,466,468      cpu_cycles:u                                                                                     ( +-  5.24% )
+    91,182,970,491      mem_stall_l1miss:u                                            ( +-  6.91% )
+    74,054,681,854      mem_stall_l2miss:u                                            ( +-  7.83% )
+
+            124.95 +- 6.54 seconds time elapsed  ( +-  5.23% )
+

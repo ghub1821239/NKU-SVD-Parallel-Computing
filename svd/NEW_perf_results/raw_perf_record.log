@@ -1,0 +1,4 @@
+Lowering default frequency rate to 250.
+Please consider tweaking /proc/sys/kernel/perf_event_max_sample_rate.
+[ perf record: Woken up 84 times to write data ]
+[ perf record: Captured and wrote 20.975 MB ./NEW_perf_results/raw.data (186933 samples) ]

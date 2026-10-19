@@ -1,0 +1,19 @@
+
+ Performance counter stats for './simd/SIMD—branch4' (5 runs):
+
+    56,799,819,299      cpu_cycles:u                                                  ( +-  1.04% )
+        48,680,415      armv8_pmuv3_0/event=0x7005/u                                     ( +- 10.35% )
+    16,121,626,977      mem_stall_anyload:u                                           ( +-  2.90% )
+    56,799,819,299      cpu_cycles:u                                                  ( +-  1.04% )
+        48,680,415      armv8_pmuv3_0/event=0x7005/u                                     ( +- 10.35% )
+    47,623,082,857      exe_stall_cycle:u                                             ( +-  1.23% )
+    16,121,626,977      mem_stall_anyload:u                                           ( +-  2.90% )
+    56,799,819,299      cpu_cycles:u                                                  ( +-  1.04% )
+    14,728,452,972      mem_stall_l1miss:u                                            ( +-  3.49% )
+    16,121,626,977      mem_stall_anyload:u                                           ( +-  2.90% )
+    56,799,819,299      cpu_cycles:u                                                                                     ( +-  1.04% )
+    14,728,452,972      mem_stall_l1miss:u                                            ( +-  3.49% )
+     9,994,824,112      mem_stall_l2miss:u                                            ( +-  5.49% )
+
+            22.371 +- 0.253 seconds time elapsed  ( +-  1.13% )
+

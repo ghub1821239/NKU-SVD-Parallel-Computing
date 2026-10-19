@@ -1,0 +1,350 @@
+=== 固定值 5x5 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 3.87105e-12
+  relative recon error      : 2.76694e-13
+  ||U^T U-I||_F             : 1.20969e-15
+  ||V^T V-I||_F             : 2.18119e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.02243
+  time gkh iteration(ms)    : 0.03214
+  结果: PASS
+
+=== 随机 8x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.13912e-14
+  relative recon error      : 7.21892e-16
+  ||U^T U-I||_F             : 2.24205e-15
+  ||V^T V-I||_F             : 1.24461e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01104
+  time gkh iteration(ms)    : 0.018
+  结果: PASS
+
+=== 近秩亏损 10x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.42613e-14
+  relative recon error      : 1.15148e-15
+  ||U^T U-I||_F             : 2.27296e-15
+  ||V^T V-I||_F             : 2.00728e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01072
+  time gkh iteration(ms)    : 0.01754
+  结果: PASS
+
+=== 随机 10x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.27164e-12
+  relative recon error      : 5.83668e-14
+  ||U^T U-I||_F             : 2.69326e-15
+  ||V^T V-I||_F             : 2.00529e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.00742
+  time gkh iteration(ms)    : 0.02057
+  结果: PASS
+
+=== 随机 1000x1000 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 2.06365e-10
+  relative recon error      : 3.57023e-13
+  ||U^T U-I||_F             : 2.30146e-13
+  ||V^T V-I||_F             : 2.27693e-13
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 5255.58
+  time gkh iteration(ms)    : 12207.7
+  结果: PASS
+
+==============================
+随机种子基值: 20260408
+总上二对角化耗时(ms): 5255.63
+总GKH迭代耗时(ms): 12207.8
+通过: 5 / 5
+=== 固定值 5x5 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 3.87105e-12
+  relative recon error      : 2.76694e-13
+  ||U^T U-I||_F             : 1.20969e-15
+  ||V^T V-I||_F             : 2.18119e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01168
+  time gkh iteration(ms)    : 0.019811
+  结果: PASS
+
+=== 随机 8x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.13912e-14
+  relative recon error      : 7.21892e-16
+  ||U^T U-I||_F             : 2.24205e-15
+  ||V^T V-I||_F             : 1.24461e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01006
+  time gkh iteration(ms)    : 0.01839
+  结果: PASS
+
+=== 近秩亏损 10x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.42613e-14
+  relative recon error      : 1.15148e-15
+  ||U^T U-I||_F             : 2.27296e-15
+  ||V^T V-I||_F             : 2.00728e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01916
+  time gkh iteration(ms)    : 0.0176
+  结果: PASS
+
+=== 随机 10x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.27164e-12
+  relative recon error      : 5.83668e-14
+  ||U^T U-I||_F             : 2.69326e-15
+  ||V^T V-I||_F             : 2.00529e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.00762
+  time gkh iteration(ms)    : 0.02066
+  结果: PASS
+
+=== 随机 1000x1000 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 2.06365e-10
+  relative recon error      : 3.57023e-13
+  ||U^T U-I||_F             : 2.30146e-13
+  ||V^T V-I||_F             : 2.27693e-13
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 5057.41
+  time gkh iteration(ms)    : 12783.9
+  结果: PASS
+
+==============================
+随机种子基值: 20260408
+总上二对角化耗时(ms): 5057.45
+总GKH迭代耗时(ms): 12784
+通过: 5 / 5
+=== 固定值 5x5 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 3.87105e-12
+  relative recon error      : 2.76694e-13
+  ||U^T U-I||_F             : 1.20969e-15
+  ||V^T V-I||_F             : 2.18119e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01234
+  time gkh iteration(ms)    : 0.02153
+  结果: PASS
+
+=== 随机 8x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.13912e-14
+  relative recon error      : 7.21892e-16
+  ||U^T U-I||_F             : 2.24205e-15
+  ||V^T V-I||_F             : 1.24461e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01241
+  time gkh iteration(ms)    : 0.01873
+  结果: PASS
+
+=== 近秩亏损 10x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.42613e-14
+  relative recon error      : 1.15148e-15
+  ||U^T U-I||_F             : 2.27296e-15
+  ||V^T V-I||_F             : 2.00728e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01197
+  time gkh iteration(ms)    : 0.01727
+  结果: PASS
+
+=== 随机 10x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.27164e-12
+  relative recon error      : 5.83668e-14
+  ||U^T U-I||_F             : 2.69326e-15
+  ||V^T V-I||_F             : 2.00529e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.00762
+  time gkh iteration(ms)    : 0.02102
+  结果: PASS
+
+=== 随机 1000x1000 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 2.06365e-10
+  relative recon error      : 3.57023e-13
+  ||U^T U-I||_F             : 2.30146e-13
+  ||V^T V-I||_F             : 2.27693e-13
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 5742.38
+  time gkh iteration(ms)    : 11991.3
+  结果: PASS
+
+==============================
+随机种子基值: 20260408
+总上二对角化耗时(ms): 5742.43
+总GKH迭代耗时(ms): 11991.4
+通过: 5 / 5
+=== 固定值 5x5 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 3.87105e-12
+  relative recon error      : 2.76694e-13
+  ||U^T U-I||_F             : 1.20969e-15
+  ||V^T V-I||_F             : 2.18119e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01079
+  time gkh iteration(ms)    : 0.01989
+  结果: PASS
+
+=== 随机 8x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.13912e-14
+  relative recon error      : 7.21892e-16
+  ||U^T U-I||_F             : 2.24205e-15
+  ||V^T V-I||_F             : 1.24461e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01052
+  time gkh iteration(ms)    : 0.01821
+  结果: PASS
+
+=== 近秩亏损 10x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.42613e-14
+  relative recon error      : 1.15148e-15
+  ||U^T U-I||_F             : 2.27296e-15
+  ||V^T V-I||_F             : 2.00728e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01804
+  time gkh iteration(ms)    : 0.01775
+  结果: PASS
+
+=== 随机 10x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.27164e-12
+  relative recon error      : 5.83668e-14
+  ||U^T U-I||_F             : 2.69326e-15
+  ||V^T V-I||_F             : 2.00529e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.00785
+  time gkh iteration(ms)    : 0.02083
+  结果: PASS
+
+=== 随机 1000x1000 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 2.06365e-10
+  relative recon error      : 3.57023e-13
+  ||U^T U-I||_F             : 2.30146e-13
+  ||V^T V-I||_F             : 2.27693e-13
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 5304.11
+  time gkh iteration(ms)    : 12281.9
+  结果: PASS
+
+==============================
+随机种子基值: 20260408
+总上二对角化耗时(ms): 5304.16
+总GKH迭代耗时(ms): 12282
+通过: 5 / 5
+=== 固定值 5x5 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 3.87105e-12
+  relative recon error      : 2.76694e-13
+  ||U^T U-I||_F             : 1.20969e-15
+  ||V^T V-I||_F             : 2.18119e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01261
+  time gkh iteration(ms)    : 0.02053
+  结果: PASS
+
+=== 随机 8x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.13912e-14
+  relative recon error      : 7.21892e-16
+  ||U^T U-I||_F             : 2.24205e-15
+  ||V^T V-I||_F             : 1.24461e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01181
+  time gkh iteration(ms)    : 0.0191
+  结果: PASS
+
+=== 近秩亏损 10x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.42613e-14
+  relative recon error      : 1.15148e-15
+  ||U^T U-I||_F             : 2.27296e-15
+  ||V^T V-I||_F             : 2.00728e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.01085
+  time gkh iteration(ms)    : 0.01806
+  结果: PASS
+
+=== 随机 10x8 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 1.27164e-12
+  relative recon error      : 5.83668e-14
+  ||U^T U-I||_F             : 2.69326e-15
+  ||V^T V-I||_F             : 2.00529e-15
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 0.0078
+  time gkh iteration(ms)    : 0.02131
+  结果: PASS
+
+=== 随机 1000x1000 ===
+  converged                 : yes
+  ||A-U*S*V^T||_F           : 2.06365e-10
+  relative recon error      : 3.57023e-13
+  ||U^T U-I||_F             : 2.30146e-13
+  ||V^T V-I||_F             : 2.27693e-13
+  diagonal structure error  : 0
+  descending order error    : 0
+  nonnegative diagonal      : yes
+  time bidiagonalization(ms): 5028.21
+  time gkh iteration(ms)    : 15928.9
+  结果: PASS
+
+==============================
+随机种子基值: 20260408
+总上二对角化耗时(ms): 5028.25
+总GKH迭代耗时(ms): 15929
+通过: 5 / 5

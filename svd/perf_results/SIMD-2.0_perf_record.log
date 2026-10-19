@@ -1,0 +1,4 @@
+Lowering default frequency rate to 250.
+Please consider tweaking /proc/sys/kernel/perf_event_max_sample_rate.
+[ perf record: Woken up 14 times to write data ]
+[ perf record: Captured and wrote 3.416 MB ./perf_results/SIMD-2.0.data (29560 samples) ]
